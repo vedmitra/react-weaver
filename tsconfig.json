@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "outDir": "dist",
+    "module": "commonjs",
+    "target": "es6",
+    "jsx": "react",
+    "allowJs": true,
+    "declaration": true,
+    "baseUrl": "./",
+    "paths": {
+      "react-weaver": ["src"]
+    }
+  },
+  "include": ["src"]
+}
