@@ -13,7 +13,6 @@ module.exports = (env, argv) => {
     release
   } = argv
   const proxyTarget = process.env.PROXY_TARGET
-  console.log("WAT: ", hmr, mode)
   const config = (
     !release
       ? (

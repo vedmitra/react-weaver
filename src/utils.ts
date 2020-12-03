@@ -47,3 +47,13 @@ export function handleEvent(onChange, ...args) {
 export function replaceValues(object, value) {
   return Object.keys(object).reduce((a, b) => ({...a, [b]: value}), {})
 }
+
+export function stripEmptyValues(object) {
+  const result = {}
+  for (const [k, v] of Object.entries(object)) {
+    if (!isEmpty(v)) {
+      result[k] = v
+    }
+  }
+  return result
+}

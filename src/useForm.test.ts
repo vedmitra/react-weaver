@@ -94,8 +94,7 @@ describe('useForm', () => {
       onError: onErrorMock,
     }))
     onErrorMock.mockClear()
-    const {updateErrors} = result.current
-    act(() => updateErrors())
+    act(() => result.current.updateErrors())
     expect(onErrorMock).toHaveBeenCalled()
   })
 
@@ -106,6 +105,41 @@ describe('useForm', () => {
       onError: onErrorMock,
     }))
     expect(onErrorMock).toHaveBeenCalled()
+  })
+
+  describe('with nested hooks', () => {
+    it('reports an error when nested field is invalid', () => {
+      const onErrorMock = jest.fn()
+      const {result: parent} = renderHook(() => useForm({
+        validator: buildValidator(),
+        onError: onErrorMock,
+      }))
+      const {result: child} = renderHook(() => useForm({
+        validator: buildValidator(),
+        onError: parent.current.fieldProps.test.onError,
+      }))
+      act(() => child.current.fieldProps.test.onChange('a'))
+      act(() => child.current.fieldProps.test.onChange(''))
+      act(() => child.current.fieldProps.test.onBlur())
+      expect(parent.current.fieldProps.test.error).toEqual({test: 'test is a required field'})
+    })
+
+    it('recovers from error when nested field is valid', () => {
+      const onErrorMock = jest.fn()
+      const {result: parent} = renderHook(() => useForm({
+        validator: buildValidator(),
+        onError: onErrorMock,
+      }))
+      const {result: child} = renderHook(() => useForm({
+        validator: buildValidator(),
+        onError: parent.current.fieldProps.test.onError,
+      }))
+      act(() => child.current.fieldProps.test.onBlur())
+      act(() => child.current.fieldProps.test.onChange('a'))
+      act(() => child.current.fieldProps.test.onChange(''))
+      act(() => child.current.fieldProps.test.onChange('a'))
+      expect(parent.current.fieldProps.test.error).toBeUndefined()
+    })
   })
 })
 

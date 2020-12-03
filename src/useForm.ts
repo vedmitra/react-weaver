@@ -1,17 +1,19 @@
 import {useState, useEffect} from 'react'
 
+import {useFormErrors} from './useFormErrors'
 import {useLocalContext} from './useLocalContext'
 import {useProxy} from './useProxy'
 import {normalizeServerErrors, IErrors} from './errors'
-import {handleEvent, isEmpty, replaceValues, maybe, identity} from './utils'
+import {handleEvent, isEmpty, replaceValues, stripEmptyValues, maybe, identity} from './utils'
 
-interface IUseForm {
+interface IUseFormArgs {
   initialValues?: object,
   onSubmit?: Function,
   onChange?: Function,
   onError?: Function,
   validator?: object,
   noPositive?: boolean,
+  name?: string,
 }
 
 interface IFieldProps {
@@ -21,7 +23,10 @@ interface IFieldProps {
   onChange: Function,
   disabled: boolean,
   onBlur: Function,
-  error?: string,
+  error?: IErrors | string,
+  onError: Function,
+  updateValidating: Function,
+  validating?: boolean,
   positive?: boolean,
 }
 
@@ -44,7 +49,7 @@ interface IFieldProps {
  *     </>
  *   )
  */
-export function useForm(args: IUseForm = {}) {
+export function useForm(args: IUseFormArgs = {}) {
   const {
     initialValues = {},
     onSubmit,
@@ -52,80 +57,41 @@ export function useForm(args: IUseForm = {}) {
     onError = identity,
     validator,
     noPositive,
+    name,
   } = args
   const [values, setValues] = useState(initialValues)
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<IErrors>({})
-  const [positive, setPositive] = useState({})
-  const [touched, setTouched] = useState({})
-  const [validating, setValidating] = useState({})
-  const ctx: any = useLocalContext({values, errors, touched, onChange})
-  // By using a proxy I'm able to automatically convert undefined
-  // values to empty strings to prevent React from complaining without
-  // having to pollute the form data with empty string values when
-  // they're not actually intended.
+  const ctx: any = useLocalContext({values, onChange})
+  const {
+    errors,
+    updateErrors,
+    validating,
+    updateValidating,
+    touched,
+    positive,
+    handleBlur,
+    hasErrors,
+    hasFieldErrors,
+    validateValues,
+    setErrors,
+  } = useFormErrors({formContext: ctx, onError, validator, name})
+
   const valuesProxy: any = new Proxy(values, {
     get(target, name) {
       return target[name] !== undefined ? target[name] : ''
     },
   })
-  // The errors proxy knows to hide errors for fields that aren't
-  // touched yet.
-  const errorsProxy: IErrors = new Proxy(errors, {
-    get(target, name: string) {
-      if (name === '__form') {
-        return target[name]
-      }
-      return touched[name] ? target[name] : undefined
-    },
-  })
+
   function updateValues(changedValues) {
     const newValues = {...ctx.values, ...changedValues}
     setValues(newValues)
-    validateValues(newValues)
     ctx.onChange?.(newValues)
   }
-  // Another proxy here means I don't have to predict form fields
-  // ahead of time in order to return a tailored updater function.
   const updateValuesProxy = useProxy(
     updateValues,
     name => handleEvent(value => updateValues({[name]: value})),
   )
-  // Allow for easy updating of errors.
-  function updateErrors(changedErrors) {
-    const newErrors = {...ctx.errors, ...changedErrors}
-    setErrors(newErrors)
-    onError(buildErrorList(newErrors), values)
-    setPositive(updatePositive(ctx.values, newErrors))
-  }
-  const updateErrorsProxy = useProxy(
-    updateErrors,
-    name => error => updateErrors({[name]: error}),
-  )
-  // Track which fields are currently validating.
-  function updateValidating(changedValidating) {
-    setValidating({...validating, ...changedValidating})
-  }
-  const updateValidatingProxy = new Proxy(updateValidating, {
-    get(target, name: string) {
-      return validating => updateValidating({[name]: validating})
-    },
-  })
-  // Validate form field values using the validator.
-  function validateValues(values) {
-    if (!validator) {
-      return
-    }
-    updateErrors(updateValidationErrors(validator, values))
-  }
-  const handleBlurProxy = useProxy(
-    {},
-    name => () => {
-      setTouched({...ctx.touched, [name]: true})
-      return validateValues(ctx.values)
-    },
-  )
-  // Submit action. Submits the form using submitMutation.
+
   async function submit() {
     if (onSubmit) {
       setLoading(true)
@@ -142,9 +108,7 @@ export function useForm(args: IUseForm = {}) {
       }
     }
   }
-  // Generate a proxy to help populate fields. This gets used as a
-  // shorthand to add all needed props to fields, such as `<Input
-  // {...fieldProps.myField} />`.
+
   const fieldPropsProxy: any = new Proxy({}, {
     get(target, name: string) {
       const props: IFieldProps = {
@@ -153,8 +117,11 @@ export function useForm(args: IUseForm = {}) {
         value: valuesProxy[name],
         onChange: updateValuesProxy[name],
         disabled: loading,
-        onBlur: handleBlurProxy[name],
-        error: errorsProxy[name],
+        onBlur: handleBlur[name],
+        error: errors[name],
+        onError: updateErrors[name],
+        updateValidating: updateValidating[name],
+        validating: validating[name],
       }
       if (!noPositive) {
         props.positive = positive[name]
@@ -162,65 +129,19 @@ export function useForm(args: IUseForm = {}) {
       return props
     }
   })
-  // Force an initial validation step, this sets errors and postives.
-  useEffect(() => {
-    validateValues(values)
-  }, [])
+
   return {
     fieldProps: fieldPropsProxy,
     submit,
     values: valuesProxy,
     updateValues: updateValuesProxy,
     loading,
-    errors: errorsProxy,
-    updateErrors: updateErrorsProxy,
+    errors,
+    updateErrors,
     validating,
-    updateValidating: updateValidatingProxy,
+    updateValidating,
     touched,
-    hasErrors: !!buildErrorList(errors),
-    hasFieldErrors: !!buildErrorList(errors, true),
+    hasErrors,
+    hasFieldErrors,
   }
-}
-
-function updatePositive(values, errors) {
-  const newPositive = {}
-  for (const [key, value] of Object.entries(values)) {
-    newPositive[key] = !errors[key] && !isEmpty(value)
-  }
-  return newPositive
-}
-
-function updateValidationErrors(validator, values) {
-  // Remove any pre-existing errors associated with the
-  // validator. This leaves in any errors that have come from custom
-  // error handling.
-  let newErrors = replaceValues(validator.fields, null)
-  try {
-    validator.validateSync(values, {abortEarly: false})
-  }
-  catch (e) {
-    if (e.name === 'ValidationError') {
-      newErrors = e.inner.reduce((a, b) => {
-        return {...a, [b.path]: b.message}
-      }, newErrors)
-    }
-    else {
-      throw e
-    }
-  }
-  return newErrors
-}
-
-function buildErrorList(errors, skipFormErrors = false) {
-  const errorList = []
-  for (const [key, value] of Object.entries(errors)) {
-    if (isEmpty(value)) {
-      continue
-    }
-    if (key === '__form' && skipFormErrors) {
-      continue
-    }
-    errorList.push(value)
-  }
-  return errorList.length ? errorList : null
 }

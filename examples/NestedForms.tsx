@@ -7,8 +7,9 @@ import {Input as BaseInput} from 'baseui/input'
 import {useForm} from '../src/useForm'
 
 export function NestedForms() {
-  const validator = React.useMemo(() => createValidator('topField'), [])
-  const {fieldProps, values} = useForm({validator})
+  const validator = React.useMemo(() => createValidator('firstLevel'), [])
+  const {fieldProps, values} = useForm({validator, name: 'TOP'})
+  // console.log(fieldProps.firstLevel0.error)
   return (
     <div>
       <HeadingMedium>Nested forms</HeadingMedium>
@@ -23,6 +24,7 @@ export function NestedForms() {
           <div>
             <Input {...fieldProps.topField2} />
           </div>
+          <span>{JSON.stringify(fieldProps.firstLevel0.error)}</span>
           <FirstLevel {...fieldProps.firstLevel0} />
           <FirstLevel {...fieldProps.firstLevel1} />
           <FirstLevel {...fieldProps.firstLevel2} />
@@ -36,19 +38,22 @@ export function NestedForms() {
 }
 
 function InnerFirstLevel(props) {
-  const {onChange} = props
+  const {onChange, onError} = props
   const validator = React.useMemo(() => createValidator('firstField'), [])
-  const {fieldProps} = useForm({onChange, validator})
+  const {fieldProps} = useForm({onChange, onError, validator, name: 'FIRST'})
   return (
     <div style={{marginLeft: '50px'}}>
       <div>
         <Input {...fieldProps.firstField0} />
+        <span>{fieldProps.firstField0.error}</span>
       </div>
       <div>
         <Input {...fieldProps.firstField1} />
+        <span>{fieldProps.firstField1.error}</span>
       </div>
       <div>
         <Input {...fieldProps.firstField2} />
+        <span>{fieldProps.firstField2.error}</span>
       </div>
       <SecondLevel {...fieldProps.secondLevel0} />
       <SecondLevel {...fieldProps.secondLevel1} />
@@ -93,7 +98,7 @@ const Input = React.memo(InnerInput)
 function createValidator(fieldPrefix, labelPrefix = '') {
   const shape = {}
   for (let ii = 0; ii < 3; ++ii) {
-    shape[`${fieldPrefix}${ii}`] = yup.string().required().label(`${labelPrefix}{ii}`)
+    shape[`${fieldPrefix}${ii}`] = yup.string().required().label(`${labelPrefix || fieldPrefix}${ii}`)
   }
   return yup.object().shape(shape)
 }

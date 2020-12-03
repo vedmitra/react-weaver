@@ -3,11 +3,12 @@ import * as uuid from 'uuid'
 
 interface IUseFormArray {
   onChange: Function,
+  onError?: Function,
   value: any,
 }
 
 export function useFormArray(args: IUseFormArray) {
-  const {onChange, value} = args
+  const {onChange, onError, value} = args
   const _value = value || []
   const ctx = useMemo(() => ({
     ids: _value.map(v => {id: uuid.v4()}),
@@ -45,6 +46,7 @@ export function useFormArray(args: IUseFormArray) {
       value: v,
       removeForm: () => removeForm(i),
       onChange: (subValue) => handleChange(i, subValue),
+      onError,
     })),
     addForm,
   }
