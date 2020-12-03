@@ -13,8 +13,8 @@
     "examples": "webpack-dev-server --hmr"
   },
   "files": [
-    "./dist/*",
-    "./src/*"
+    "dist/**/*",
+    "src/**/*"
   ],
   "peerDependencies": {
     "react": "^16.13.1",
