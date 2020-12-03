@@ -1,12 +1,12 @@
 import {useMemo} from 'react'
 import * as uuid from 'uuid'
 
-interface UseFormArray {
+interface IUseFormArray {
   onChange: Function,
   value: any,
 }
 
-export function useFormArray(args: UseFormArray) {
+export function useFormArray(args: IUseFormArray) {
   const {onChange, value} = args
   const _value = value || []
   const ctx = useMemo(() => ({

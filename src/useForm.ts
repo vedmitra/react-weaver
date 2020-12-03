@@ -2,9 +2,10 @@ import {useState, useEffect} from 'react'
 
 import {useLocalContext} from './useLocalContext'
 import {useProxy} from './useProxy'
+import {normalizeServerErrors, IErrors} from './errors'
 import {handleEvent, isEmpty, replaceValues, maybe, identity} from './utils'
 
-interface UseForm {
+interface IUseForm {
   initialValues?: object,
   onSubmit?: Function,
   onChange?: Function,
@@ -13,7 +14,7 @@ interface UseForm {
   noPositive?: boolean,
 }
 
-interface FieldProps {
+interface IFieldProps {
   id: string | number | symbol,
   name: string | number | symbol,
   value: any,
@@ -43,7 +44,7 @@ interface FieldProps {
  *     </>
  *   )
  */
-function useForm(args: UseForm = {}) {
+export function useForm(args: IUseForm = {}) {
   const {
     initialValues = {},
     onSubmit,
@@ -54,9 +55,9 @@ function useForm(args: UseForm = {}) {
   } = args
   const [values, setValues] = useState(initialValues)
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState({})
+  const [errors, setErrors] = useState<IErrors>({})
   const [positive, setPositive] = useState({})
-  const [touched, setTouched]: [any, Function] = useState({})
+  const [touched, setTouched] = useState({})
   const [validating, setValidating] = useState({})
   const ctx: any = useLocalContext({values, errors, touched, onChange})
   // By using a proxy I'm able to automatically convert undefined
@@ -70,8 +71,11 @@ function useForm(args: UseForm = {}) {
   })
   // The errors proxy knows to hide errors for fields that aren't
   // touched yet.
-  const errorsProxy = new Proxy(errors, {
-    get(target, name) {
+  const errorsProxy: IErrors = new Proxy(errors, {
+    get(target, name: string) {
+      if (name === '__form') {
+        return target[name]
+      }
       return touched[name] ? target[name] : undefined
     },
   })
@@ -103,7 +107,7 @@ function useForm(args: UseForm = {}) {
     setValidating({...validating, ...changedValidating})
   }
   const updateValidatingProxy = new Proxy(updateValidating, {
-    get(target, name) {
+    get(target, name: string) {
       return validating => updateValidating({[name]: validating})
     },
   })
@@ -125,11 +129,12 @@ function useForm(args: UseForm = {}) {
   async function submit() {
     if (onSubmit) {
       setLoading(true)
+      setErrors({})  // Clear any disconnected form errors
       try {
         await onSubmit(values)
       }
       catch (e) {
-        setErrors(e.errors || e)
+        setErrors(normalizeServerErrors(e))
         throw e
       }
       finally {
@@ -141,8 +146,8 @@ function useForm(args: UseForm = {}) {
   // shorthand to add all needed props to fields, such as `<Input
   // {...fieldProps.myField} />`.
   const fieldPropsProxy: any = new Proxy({}, {
-    get(target, name) {
-      const props: FieldProps = {
+    get(target, name: string) {
+      const props: IFieldProps = {
         id: name,
         name,
         value: valuesProxy[name],
@@ -173,6 +178,7 @@ function useForm(args: UseForm = {}) {
     updateValidating: updateValidatingProxy,
     touched,
     hasErrors: !!buildErrorList(errors),
+    hasFieldErrors: !!buildErrorList(errors, true),
   }
 }
 
@@ -205,9 +211,16 @@ function updateValidationErrors(validator, values) {
   return newErrors
 }
 
-function buildErrorList(errors) {
-  const errorList = Object.values(errors).filter(v => !isEmpty(v))
+function buildErrorList(errors, skipFormErrors = false) {
+  const errorList = []
+  for (const [key, value] of Object.entries(errors)) {
+    if (isEmpty(value)) {
+      continue
+    }
+    if (key === '__form' && skipFormErrors) {
+      continue
+    }
+    errorList.push(value)
+  }
   return errorList.length ? errorList : null
 }
-
-export { useForm }
