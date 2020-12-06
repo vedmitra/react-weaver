@@ -1,7 +1,7 @@
-import {useMemo} from 'react'
+import {useState, useMemo} from 'react'
 import * as uuid from 'uuid'
 
-import {isNullish} from './utils'
+import {isNullish, stripArray} from './utils'
 
 interface IUseFormArray {
   minItems?: Number,
@@ -13,6 +13,7 @@ interface IUseFormArray {
 export function useFormArray(args: IUseFormArray) {
   const {minItems, onChange, onError} = args
   const value = buildValue(args?.value, minItems)
+  const [errors, setErrors] = useState(value.map(v => null))
   const ctx = useMemo(() => ({
     ids: value.map(v => uuid.v4()),
   }), [])
@@ -23,11 +24,24 @@ export function useFormArray(args: IUseFormArray) {
       ...value.slice(index + 1),
    ])
   }
+  function handleError(index, error) {
+    const newErrors = [
+      ...errors.slice(0, index),
+      error,
+      ...errors.slice(index + 1),
+    ]
+    setErrors(newErrors)
+    onError?.(stripArray(newErrors))
+  }
   function addForm() {
     ctx.ids = [
       ...ctx.ids,
       uuid.v4(),
     ]
+    setErrors([
+      ...errors,
+      null,
+    ])
     onChange?.([
       ...value,
       {},
@@ -38,6 +52,12 @@ export function useFormArray(args: IUseFormArray) {
       ...ctx.ids.slice(0, index),
       ...ctx.ids.slice(index + 1),
     ]
+    const newErrors = [
+      ...errors.slice(0, index),
+      ...errors.slice(index + 1),
+    ]
+    setErrors(newErrors)
+    onError?.(stripArray(newErrors))
     onChange?.([
      ...value.slice(0, index),
      ...value.slice(index + 1), 
@@ -49,7 +69,7 @@ export function useFormArray(args: IUseFormArray) {
       value: v,
       removeForm: () => removeForm(i),
       onChange: subValue => handleChange(i, subValue),
-      onError,
+      onError: error => handleError(i, error),
     })),
     addForm,
   }

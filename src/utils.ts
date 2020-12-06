@@ -57,3 +57,11 @@ export function stripEmptyValues(object) {
   }
   return result
 }
+
+export function stripArray(array: any[]) {
+  const stripped = array.filter(e => !isNullish(e))
+  if (stripped.length === 0) {
+    return null
+  }
+  return stripped
+}
