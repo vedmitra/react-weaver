@@ -6,7 +6,7 @@ React Forms that are good at nesting.
 
  * Designed with controlled inputs in mind.
  * Minimal rerendering, especially with deep nesting.
- * [Tiny bundle size](https://bundlephobia.com/result?p=react-weaver@0.0.3).
+ * [Tiny bundle size](https://bundlephobia.com/result?p=react-weaver).
 
 The [Sociable Weaver](https://en.wikipedia.org/wiki/Sociable_weaver)
 is particularly good at nesting, just like React Weaver.
