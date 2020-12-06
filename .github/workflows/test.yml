@@ -1,4 +1,4 @@
-name: Test
+name: Test workflow
 on:
   push:
     branches:
@@ -34,4 +34,9 @@ jobs:
 
       - name: Test
         run: |
-          yarn test
+          yarn test:cov
+
+      - name: Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

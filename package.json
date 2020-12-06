@@ -10,6 +10,7 @@
     "storybook": "start-storybook",
     "build": "tsc",
     "test": "jest src",
+    "test:cov": "jest src --coverage",
     "examples": "webpack-dev-server --hmr"
   },
   "files": [
