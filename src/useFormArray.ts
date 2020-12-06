@@ -76,15 +76,15 @@ export function useFormArray(args: IUseFormArray) {
 }
 
 function buildValue(initialValue, minItems) {
+  const value = isNullish(initialValue) ? [] : Array.isArray(initialValue) ? initialValue : [initialValue]
   if (isNullish(minItems)) {
-    return initialValue
+    return value
   }
-  const value = Array.isArray(initialValue) ? initialValue : []
   if (value.length >= minItems) {
     return value
   }
   return [
     ...value,
-    Array(minItems - value.length).fill({}),
+    ...Array(minItems - value.length).fill({}),
   ]
 }
