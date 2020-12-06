@@ -1,23 +1,26 @@
 import {useMemo} from 'react'
 import * as uuid from 'uuid'
 
+import {isNullish} from './utils'
+
 interface IUseFormArray {
+  minItems?: Number,
   onChange: Function,
   onError?: Function,
   value: any,
 }
 
 export function useFormArray(args: IUseFormArray) {
-  const {onChange, onError, value} = args
-  const _value = value || []
+  const {minItems, onChange, onError} = args
+  const value = buildValue(args?.value, minItems)
   const ctx = useMemo(() => ({
     ids: value.map(v => uuid.v4()),
   }), [])
   function handleChange(index, subValue) {
     onChange?.([
-      ..._value.slice(0, index),
+      ...value.slice(0, index),
       subValue,
-      ..._value.slice(index + 1),
+      ...value.slice(index + 1),
    ])
   }
   function addForm() {
@@ -26,7 +29,7 @@ export function useFormArray(args: IUseFormArray) {
       uuid.v4(),
     ]
     onChange?.([
-      ..._value,
+      ...value,
       {},
     ])
   }
@@ -36,18 +39,32 @@ export function useFormArray(args: IUseFormArray) {
       ...ctx.ids.slice(index + 1),
     ]
     onChange?.([
-     ..._value.slice(0, index),
-     ..._value.slice(index + 1), 
+     ...value.slice(0, index),
+     ...value.slice(index + 1), 
    ])
   }
   return {
-    formsArray: _value.map((v, i) => ({
+    formsArray: value.map((v, i) => ({
       key: ctx.ids[i],
       value: v,
       removeForm: () => removeForm(i),
-      onChange: (subValue) => handleChange(i, subValue),
+      onChange: subValue => handleChange(i, subValue),
       onError,
     })),
     addForm,
   }
+}
+
+function buildValue(initialValue, minItems) {
+  if (isNullish(minItems)) {
+    return initialValue
+  }
+  const value = Array.isArray(initialValue) ? initialValue : []
+  if (value.length >= minItems) {
+    return value
+  }
+  return [
+    ...value,
+    Array(minItems - value.length).fill({}),
+  ]
 }
