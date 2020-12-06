@@ -5,11 +5,16 @@ export interface IErrors {
 
 export function normalizeServerErrors(exception) {
   const errors: IErrors = {}
-  const rawErrors = exception.errors || exception || []
-  for (const rawError of rawErrors) {
-    if (!errors.__form) {
-      errors.__form = rawError
+  const rawErrors = exception.errors || exception
+  if (Array.isArray(rawErrors)) {
+    for (const rawError of rawErrors) {
+      if (!errors.__form) {
+        errors.__form = rawError
+      }
     }
+  }
+  else {
+    errors.__form = rawErrors
   }
   return errors
 }
