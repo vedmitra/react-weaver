@@ -1,5 +1,7 @@
 # React Weaver
 
+![Build status](https://github.com/furious-luke/react-weaver/workflows/Test/badge.svg?branch=master)
+
 React Forms that are good at nesting.
 
  * Designed with controlled inputs in mind.
