@@ -141,10 +141,89 @@ describe('useForm', () => {
       expect(parent.current.fieldProps.test.error).toBeUndefined()
     })
   })
+
+  it('submit sets and clears loading flag', async () => {
+    const {result, waitForNextUpdate} = renderHook(() => useForm({
+      onSubmit: async () => sleep(100),
+    }))
+    act(() => result.current.submit())
+    expect(result.current.loading).toBeTruthy()
+    await waitForNextUpdate()
+    expect(result.current.loading).toBeFalsy()
+  })
+
+  it('submit calls onSubmit', async () => {
+    const onSubmitMock = jest.fn()
+    const {result} = renderHook(() => useForm({
+      onSubmit: onSubmitMock,
+    }))
+    await act(() => result.current.submit())
+    expect(onSubmitMock).toHaveBeenCalled()
+  })
+
+  it('submit sets errors from exception', async () => {
+    const {result} = renderHook(() => useForm({
+      onSubmit: async () => {
+        throw new Error('fail')
+      },
+    }))
+    try {
+      await act(() => result.current.submit())
+    }
+    catch (e) {
+    }
+    expect(result.current.errors).toEqual({__form: 'fail'})
+  })
+
+  it('submit sets errors from array', async () => {
+    const {result} = renderHook(() => useForm({
+      onSubmit: async () => {
+        const error = new Error('fail')
+        error.errors = [
+          'fail0',
+          'fail1',
+        ]
+        throw error
+      },
+    }))
+    try {
+      await act(() => result.current.submit())
+    }
+    catch (e) {
+    }
+    expect(result.current.errors).toEqual({__form: 'fail0'})
+  })
+
+  it('submit sets errors from object', async () => {
+    const {result} = renderHook(() => useForm({
+      onSubmit: async () => {
+        const error = new Error('fail')
+        error.errors = {
+          field0: 'fail0',
+          field1: 'fail1',
+        }
+        throw error
+      },
+    }))
+    try {
+      await act(() => result.current.submit())
+    }
+    catch (e) {
+    }
+    act(() => result.current.fieldProps.field0.onBlur())
+    act(() => result.current.fieldProps.field1.onBlur())
+    expect(result.current.errors).toEqual({field0: 'fail0', field1: 'fail1'})
+  })
 })
 
 function buildValidator() {
   return yup.object().shape({
     test: yup.string().required(),
+  })
+}
+
+async function sleep(msec) {
+  return new Promise(resolve => {
+    setTimeout(resolve, msec)
   })
 }
