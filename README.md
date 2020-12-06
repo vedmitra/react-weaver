@@ -1,6 +1,7 @@
 # React Weaver
 
 ![Build status](https://github.com/furious-luke/react-weaver/workflows/Test/badge.svg?branch=master)
+[![Test coverage](https://codecov.io/gh/furious-luke/react-weaver/branch/master/graph/badge.svg?token=DHS7UE27MJ)](https://codecov.io/gh/furious-luke/react-weaver)
 
 React Forms that are good at nesting.
 
