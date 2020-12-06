@@ -11,7 +11,7 @@ export function useFormArray(args: IUseFormArray) {
   const {onChange, onError, value} = args
   const _value = value || []
   const ctx = useMemo(() => ({
-    ids: _value.map(v => {id: uuid.v4()}),
+    ids: value.map(v => uuid.v4()),
   }), [])
   function handleChange(index, subValue) {
     onChange?.([
