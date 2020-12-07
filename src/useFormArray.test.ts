@@ -64,6 +64,26 @@ describe('useFormArray', () => {
     expect(formsArray[1].value).toEqual('2')
   })
 
+  it('can add forms', () => {
+    const onChangeMock = jest.fn()
+    const {result} = renderHook(() => useFormArray({
+      onChange: onChangeMock,
+      value: null,
+    }))
+    act(() => result.current.addForm())
+    expect(onChangeMock).toHaveBeenCalledWith([{}])
+  })
+
+  it('can remove forms', () => {
+    const onChangeMock = jest.fn()
+    const {result} = renderHook(() => useFormArray({
+      onChange: onChangeMock,
+      value: '1',
+    }))
+    act(() => result.current.formsArray[0].removeForm())
+    expect(onChangeMock).toHaveBeenCalledWith([])
+  })
+
   it('calls onChange with changed value', () => {
     const onChangeMock = jest.fn()
     const {result} = renderHook(() => useFormArray({

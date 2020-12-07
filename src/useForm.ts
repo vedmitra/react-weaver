@@ -4,7 +4,7 @@ import {useFormErrors} from './useFormErrors'
 import {useLocalContext} from './useLocalContext'
 import {useProxy} from './useProxy'
 import {normalizeServerErrors, IErrors} from './errors'
-import {handleEvent, isEmpty, replaceValues, stripEmptyValues, maybe, identity} from './utils'
+import {handleEvent, isEmpty, replaceValues, stripEmptyValues, identity} from './utils'
 
 interface IUseFormArgs {
   initialValues?: object,

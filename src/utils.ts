@@ -1,14 +1,6 @@
 export function identity() {
 }
 
-export function maybe(func, $this?) {
-  if (func) {
-    const boundFunc = func.bind($this)
-    return (...args) => boundFunc(...args)
-  }
-  return identity
-}
-
 export function isNullish(value: any): boolean {
   return value === undefined || value === null
 }
