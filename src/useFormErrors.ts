@@ -69,7 +69,7 @@ export function useFormErrors(args: IUseFormErrorsArgs) {
   )
 
   function validateValues(values) {
-    updateErrors(updateValidationErrors(validator, values, ctx.externalErrors))
+    updateErrors(updateValidationErrors(validator, values, ctx.externalErrors, updateTouched))
   }
 
   function updateTouched(changedTouched) {
@@ -112,12 +112,20 @@ function updatePositive(values, errors) {
   return newPositive
 }
 
-function updateValidationErrors(validator, values, externalErrors) {
+function updateValidationErrors(validator, values, externalErrors, onTouched) {
   let newErrors = {}
   if (validator) {
     newErrors = replaceValues(validator.fields, null)
     try {
-      validator.validateSync(values, {abortEarly: false})
+      validator.validateSync(
+        values,
+        {
+          abortEarly: false,
+          context: {
+            onTouched,
+          }
+        },
+      )
     }
     catch (e) {
       if (e.name === 'ValidationError') {
