@@ -98,6 +98,7 @@ export function useFormErrors(args: IUseFormErrorsArgs) {
     handleBlur: handleBlurProxy,
     hasErrors: !!buildErrorList(errors),
     hasFieldErrors: !!buildErrorList(errors, true),
+    anyValidating: Object.values(ctx.validating).some(x => !!x),
     validateValues,
     setErrors,
   }

@@ -25,7 +25,7 @@ interface IFieldProps {
   onBlur: Function,
   error?: IErrors | string,
   onError: Function,
-  updateValidating: Function,
+  onValidating: Function,
   validating?: boolean,
   positive?: boolean,
 }
@@ -72,7 +72,7 @@ export function useForm(args: IUseFormArgs = {}) {
     handleBlur,
     hasErrors,
     hasFieldErrors,
-    validateValues,
+    anyValidating,
     setErrors,
   } = useFormErrors({formContext: ctx, onError, validator, name})
 
@@ -120,7 +120,7 @@ export function useForm(args: IUseFormArgs = {}) {
         onBlur: handleBlur[name],
         error: errors[name],
         onError: updateErrors[name],
-        updateValidating: updateValidating[name],
+        onValidating: updateValidating[name],
         validating: validating[name],
       }
       if (!noPositive) {
@@ -143,5 +143,7 @@ export function useForm(args: IUseFormArgs = {}) {
     touched,
     hasErrors,
     hasFieldErrors,
+    anyValidating,
+    notReady: hasErrors || anyValidating || loading,
   }
 }
