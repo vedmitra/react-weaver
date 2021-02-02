@@ -6,7 +6,7 @@ import {useProxy} from './useProxy'
 import {normalizeServerErrors, IErrors} from './errors'
 import {handleEvent, isEmpty, replaceValues, stripEmptyValues, identity} from './utils'
 
-interface IUseFormArgs {
+export interface IUseFormArgs {
   initialValues?: object,
   onSubmit?: Function,
   onChange?: Function,
@@ -16,7 +16,7 @@ interface IUseFormArgs {
   name?: string,
 }
 
-interface IFieldProps {
+export interface IFieldProps {
   id: string | number | symbol,
   name: string | number | symbol,
   value: any,
