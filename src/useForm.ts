@@ -1,33 +1,39 @@
-import {useState, useEffect} from 'react'
+import { useState, useEffect } from "react";
 
-import {useFormErrors} from './useFormErrors'
-import {useLocalContext} from './useLocalContext'
-import {useProxy} from './useProxy'
-import {normalizeServerErrors, IErrors} from './errors'
-import {handleEvent, isEmpty, replaceValues, stripEmptyValues, identity} from './utils'
+import { useFormErrors } from "./useFormErrors";
+import { useLocalContext } from "./useLocalContext";
+import { useProxy } from "./useProxy";
+import { normalizeServerErrors, IErrors } from "./errors";
+import {
+  handleEvent,
+  isEmpty,
+  replaceValues,
+  stripEmptyValues,
+  identity,
+} from "./utils";
 
 export interface IUseFormArgs {
-  initialValues?: object,
-  onSubmit?: Function,
-  onChange?: Function,
-  onError?: Function,
-  validator?: object,
-  noPositive?: boolean,
-  name?: string,
+  initialValues?: object;
+  onSubmit?: Function;
+  onChange?: Function;
+  onError?: Function;
+  validator?: object;
+  noPositive?: boolean;
+  name?: string;
 }
 
 export interface IFieldProps {
-  id: string | number | symbol,
-  name: string | number | symbol,
-  value: any,
-  onChange: Function,
-  disabled: boolean,
-  onBlur: Function,
-  error?: IErrors | string,
-  onError: Function,
-  onValidating: Function,
-  validating?: boolean,
-  positive?: boolean,
+  id: string | number | symbol;
+  name: string | number | symbol;
+  value: any;
+  onChange: Function;
+  disabled: boolean;
+  onBlur: Function;
+  error?: IErrors | string;
+  onError: Function;
+  onValidating: Function;
+  validating?: boolean;
+  positive?: boolean;
 }
 
 /*
@@ -58,10 +64,10 @@ export function useForm(args: IUseFormArgs = {}) {
     validator,
     noPositive,
     name,
-  } = args
-  const [values, setValues] = useState(initialValues)
-  const [loading, setLoading] = useState(false)
-  const ctx: any = useLocalContext({values, onChange})
+  } = args;
+  const [values, setValues] = useState(initialValues);
+  const [loading, setLoading] = useState(false);
+  const ctx: any = useLocalContext({ values, onChange });
   const {
     errors,
     updateErrors,
@@ -74,61 +80,61 @@ export function useForm(args: IUseFormArgs = {}) {
     hasFieldErrors,
     anyValidating,
     setErrors,
-  } = useFormErrors({formContext: ctx, onError, validator, name})
+  } = useFormErrors({ formContext: ctx, onError, validator, name });
 
   const valuesProxy: any = new Proxy(values, {
     get(target, name) {
-      return target[name] !== undefined ? target[name] : ''
+      return target[name] !== undefined ? target[name] : "";
     },
-  })
+  });
 
   function updateValues(changedValues) {
-    const newValues = {...ctx.values, ...changedValues}
-    setValues(newValues)
-    ctx.onChange?.(newValues)
+    const newValues = { ...ctx.values, ...changedValues };
+    setValues(newValues);
+    ctx.onChange?.(newValues);
   }
-  const updateValuesProxy = useProxy(
-    updateValues,
-    name => handleEvent(value => updateValues({[name]: value})),
-  )
+  const updateValuesProxy = useProxy(updateValues, (name) =>
+    handleEvent((value) => updateValues({ [name]: value }))
+  );
 
   async function submit() {
     if (onSubmit) {
-      setLoading(true)
-      setErrors({})  // Clear any disconnected form errors
+      setLoading(true);
+      setErrors({}); // Clear any disconnected form errors
       try {
-        await onSubmit(values)
-      }
-      catch (e) {
-        setErrors(normalizeServerErrors(e))
-        throw e
-      }
-      finally {
-        setLoading(false)
+        await onSubmit(values);
+      } catch (e) {
+        updateErrors(normalizeServerErrors(e));
+        throw e;
+      } finally {
+        setLoading(false);
       }
     }
   }
 
-  const fieldPropsProxy: any = new Proxy({}, {
-    get(target, name: string) {
-      const props: IFieldProps = {
-        id: name,
-        name,
-        value: valuesProxy[name],
-        onChange: updateValuesProxy[name],
-        disabled: loading,
-        onBlur: handleBlur[name],
-        error: errors[name],
-        onError: updateErrors[name],
-        onValidating: updateValidating[name],
-        validating: validating[name],
-      }
-      if (!noPositive) {
-        props.positive = positive[name]
-      }
-      return props
+  const fieldPropsProxy: any = new Proxy(
+    {},
+    {
+      get(target, name: string) {
+        const props: IFieldProps = {
+          id: name,
+          name,
+          value: valuesProxy[name],
+          onChange: updateValuesProxy[name],
+          disabled: loading,
+          onBlur: handleBlur[name],
+          error: errors[name],
+          onError: updateErrors[name],
+          onValidating: updateValidating[name],
+          validating: validating[name],
+        };
+        if (!noPositive) {
+          props.positive = positive[name];
+        }
+        return props;
+      },
     }
-  })
+  );
 
   return {
     fieldProps: fieldPropsProxy,
@@ -145,5 +151,5 @@ export function useForm(args: IUseFormArgs = {}) {
     hasFieldErrors,
     anyValidating,
     notReady: hasErrors || anyValidating || loading,
-  }
+  };
 }
